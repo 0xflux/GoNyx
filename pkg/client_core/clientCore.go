@@ -24,6 +24,7 @@ func StartClient() {
 			fmt.Printf("Error listening to browser.%v\n", err)
 		}
 
+		// TODO: pick these outputs apart, obviously pointing to some structure in memory
 		fmt.Printf("Listener: %v\n", listener)
 		fmt.Printf("Browser conn: %v\n", browserConn)
 
