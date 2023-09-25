@@ -13,3 +13,5 @@ Although I haven't yet architected the project, I feel the starting point of the
 The proxy server now properly handles a SOCKS5 standard request, thanks to some well documented resources on Google as to SOCKS5 handshakes. At the moment we are simply intercepting the domain and port; there is no availability for URI inspection, so that will likely be the next area of focus. Some screenshot examples of whats going on under the hood.
 
 I'm not sure what DNS is doing though, it is set to route via the SOCKS5 proxy - a request to example.nyx tries to make a Google search (that's what the google:443 request is in the below screenshot). I'm not sure where this routing logic is, whether it is a DNS request not finding *.nyx, or whether it's some functionality baked into Firefox.
+
+![image](https://github.com/the-wandering-photon/GoNyx/assets/49762827/7e457416-2a56-4f9d-9aa0-f0a70c466943)
