@@ -3,6 +3,7 @@ package clientcore
 import (
 	"GoNyx/pkg/global"
 	"encoding/binary"
+	"errors"
 	"fmt"
 	"io"
 	"log"
@@ -41,6 +42,15 @@ func StartClient() {
 // process connection to proxy
 func processConnection(conn net.Conn) {
 
+	targetAddress, err := outboundSocksHandshake(conn)
+	if err != nil {
+		log.Printf("Handshake error: %v", err)
+	}
+
+}
+
+// handle SOCKS5 handshake
+func outboundSocksHandshake(conn net.Conn) (string, error) {
 	/*
 		Good info on this:
 		https://medium.com/@nimit95/socks-5-a-proxy-protocol-b741d3bec66c
@@ -56,13 +66,14 @@ func processConnection(conn net.Conn) {
 	_, err := io.ReadFull(conn, buf)
 	if err != nil {
 		fmt.Printf("Error consuming first 2 bytes of connection data. %v\n", err)
-		return
+		return "", err
 	}
 
 	// check socks is running as v5
 	if buf[0] != 5 {
 		fmt.Printf("Wrong SOCKS version detected, make sure you use SOCKSv5. SOCKS detected is version %v. "+
 			"Refusing connection.\n", buf[0])
+		return "", errors.New("invalid SOCKS version")
 	}
 
 	// number of authentication methods the client supports
@@ -70,7 +81,7 @@ func processConnection(conn net.Conn) {
 	_, err = io.ReadFull(conn, buf[:numAuthMethods])
 	if err != nil {
 		fmt.Printf("Error consuming methods %v.", err)
-		return
+		return "", err
 	}
 
 	// the handshake requires a response at this stage,
@@ -103,12 +114,13 @@ func processConnection(conn net.Conn) {
 	_, err = io.ReadFull(conn, buf[:4])
 	if err != nil {
 		fmt.Printf("Error reading request data, %v\n", err)
-		return
+		return "", err
 	}
 
 	// only support TCP/IP stream connection for now
 	if buf[1] != 1 {
 		fmt.Printf("Unsupported command, expecting 0x1, found: %v.\n", buf[1])
+		return "", errors.New("unsupported command, expecting 0x1")
 	}
 
 	var targetAddress string
@@ -117,7 +129,7 @@ func processConnection(conn net.Conn) {
 		_, err := io.ReadFull(conn, buf[:6])
 		if err != nil {
 			fmt.Printf("Error reading IPv4: %v\n", err)
-			return
+			return "", err
 		}
 		targetAddress = fmt.Sprintf("%d.%d.%d.%d:%d", buf[0], buf[1], buf[2], buf[3], binary.BigEndian.Uint16(buf[4:6]))
 
@@ -130,7 +142,7 @@ func processConnection(conn net.Conn) {
 		_, err = io.ReadFull(conn, buf[:1])
 		if err != nil {
 			fmt.Printf("Error reading domain length: %v\n", err)
-			return
+			return "", err
 		}
 		domainLength := int(buf[0])
 
@@ -144,7 +156,7 @@ func processConnection(conn net.Conn) {
 		_, err = io.ReadFull(conn, buf[:domainLength+2]) // domain + next 2 bytes for port
 		if err != nil {
 			fmt.Printf("Error reading domain: %v\n", err)
-			return
+			return "", err
 		}
 
 		// fmt.Printf("\nbuf as hex %02x, buf as str: %s\n", buf, buf)
@@ -155,11 +167,15 @@ func processConnection(conn net.Conn) {
 
 	case 4: // ipv6 refuse
 		fmt.Println("IPv6 addresses not supported.")
-		return
+		return "", errors.New("ipv6 addresses not supported")
 	default:
-		fmt.Println("Invalid address type")
-		return
+		fmt.Println("Invalid address type.")
+		return "", errors.New("invalid address type")
 	}
 
-	fmt.Println(targetAddress)
+	if targetAddress != "" {
+		return targetAddress, nil
+	}
+
+	return targetAddress, errors.New("invalid target address, debug")
 }
