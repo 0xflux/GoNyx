@@ -15,3 +15,7 @@ The proxy server now properly handles a SOCKS5 standard request, thanks to some 
 I'm not sure what DNS is doing though, it is set to route via the SOCKS5 proxy - a request to example.nyx tries to make a Google search (that's what the google:443 request is in the below screenshot). I'm not sure where this routing logic is, whether it is a DNS request not finding *.nyx, or whether it's some functionality baked into Firefox.
 
 ![image](https://github.com/the-wandering-photon/GoNyx/assets/49762827/7e457416-2a56-4f9d-9aa0-f0a70c466943)
+
+## 26/09/2023
+
+Spent quite some time today looking into the next part of the connection stream, which should be the HTTP data the proxy processes, after validating the SOCKS5 handshake. I currently expect to be able to read into a buffer the http connection data; however it appears to be empty (EOF). More granular debugging is required, there could be data there but I am accessing it wrong, or the browser closed the stream before the HTTP data could be processed (unlikely), or there is some issue with the connection state. Next steps will be to debug this. As far as I can see from SOCKS5 documentation, I do not need to send a response back to the client until the connection was successfully forwarded to the destination, so I don't think the HTTP data would follow if I send a response to the client - however I am remaining open minded to this.
