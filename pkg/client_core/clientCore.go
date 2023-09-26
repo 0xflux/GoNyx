@@ -42,10 +42,30 @@ func StartClient() {
 // process connection to proxy
 func processConnection(conn net.Conn) {
 
+	// ensures we close the connection in the right scope.
+	// therefore, cannot use the connection outside of this function; can use within
+	// nested functions however.
+	defer conn.Close()
+
+	// complete SOCKS5 handshake
 	targetAddress, err := outboundSocksHandshake(conn)
 	if err != nil {
-		log.Printf("Handshake error: %v", err)
+		log.Printf("Handshake error: %v. targetAddress: %s.\nAborting request.\n", targetAddress, err)
+		return
 	}
+
+	// parse http connection data
+	buff := make([]byte, 4096)
+	req, err := conn.Read(buff)
+	if err != nil {
+		if err == io.EOF {
+			// Currently reaching this error consistantly.
+			fmt.Printf("Error: EOF, buffer len: %d, data: %s.\n", req, buff[:req])
+		}
+		fmt.Printf("Error reading http connection, %v.\nAborting request\n", err)
+	}
+
+	fmt.Printf("%02x\n", buff[:req])
 
 }
 
@@ -59,7 +79,6 @@ func outboundSocksHandshake(conn net.Conn) (string, error) {
 		Once a byte is read from a net.Conn object, it is consumed and subsequent reads will
 		read the next bytes. Kinda like reading from a file: as you read, your position increments.
 	*/
-	defer conn.Close()
 
 	// first two bytes, SOCKS version & authentication method
 	buf := make([]byte, 2)
@@ -174,8 +193,10 @@ func outboundSocksHandshake(conn net.Conn) (string, error) {
 	}
 
 	if targetAddress != "" {
+
 		return targetAddress, nil
 	}
 
+	// if somehow target address is empty string
 	return targetAddress, errors.New("invalid target address, debug")
 }
