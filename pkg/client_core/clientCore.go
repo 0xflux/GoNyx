@@ -8,6 +8,7 @@ import (
 	"io"
 	"log"
 	"net"
+	"strings"
 )
 
 /*
@@ -54,6 +55,37 @@ func processConnection(conn net.Conn) {
 		return
 	}
 
+	addrType := global.ClassifyAddress(targetAddress)
+	switch addrType {
+	case "domain":
+		// handle domain connection
+		handleDomainConnection(targetAddress, conn)
+	case "IPv4":
+		// (route via exits)
+	case "IPv6":
+		log.Println("IPv6 not supported. Aborting connection.")
+		return
+	}
+
+}
+
+// handle domain connection after SOCKS handshake
+func handleDomainConnection(targetAddress string, conn net.Conn) {
+	if strings.HasSuffix(strings.Split(targetAddress, ":")[0], ".nyx") {
+		fmt.Println("Nyx address")
+		// handle .nyx protocol
+		// targetConn, err := net.Dial("tcp", targetAddress)
+		// if err != nil {
+		// 	log.Printf("Error dialing %s\n", targetAddress)
+		// 	return "", err
+		// }
+		// defer targetConn.Close()
+	} else {
+		fmt.Println("Clearweb address")
+		// handle clear web connection routing
+		// exit will use net.Dial() not the client I think
+	}
+
 	// parse http connection data
 	buff := make([]byte, 4096)
 	req, err := conn.Read(buff)
@@ -66,7 +98,6 @@ func processConnection(conn net.Conn) {
 	}
 
 	fmt.Printf("%s\n", buff[:req])
-
 }
 
 // handle SOCKS5 handshake
@@ -184,8 +215,6 @@ func outboundSocksHandshake(conn net.Conn) (string, error) {
 		// domain + 2 bytes (i.e. the next 2 bytes after the end of the domain)
 		targetAddress = fmt.Sprintf("%s:%d", buf[:domainLength], binary.BigEndian.Uint16(buf[domainLength:domainLength+2]))
 
-		// TODO: If this is a clearweb domain, handle routing here, then the exit will use net.Dial()
-
 	case 4: // ipv6 refuse
 		fmt.Println("IPv6 addresses not supported.")
 		return "", errors.New("ipv6 addresses not supported")
@@ -194,15 +223,7 @@ func outboundSocksHandshake(conn net.Conn) (string, error) {
 		return "", errors.New("invalid address type")
 	}
 
-	// try connect, forget intercept for now
-	targetConn, err := net.Dial("tcp", targetAddress)
-	if err != nil {
-		log.Printf("Error dialing %s\n", targetAddress)
-		return "", err
-	}
-	defer targetConn.Close()
-
-	// successful connection send to client
+	// send success response to client
 	conn.Write([]byte{0x05, 0x00, 0x00, 0x01, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00})
 
 	if targetAddress != "" {
