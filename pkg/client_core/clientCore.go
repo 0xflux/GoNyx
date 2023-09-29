@@ -65,7 +65,7 @@ func processConnection(conn net.Conn) {
 		fmt.Printf("Error reading http connection, %v.\nAborting request\n", err)
 	}
 
-	fmt.Printf("%02x\n", buff[:req])
+	fmt.Printf("%s\n", buff[:req])
 
 }
 
@@ -184,6 +184,8 @@ func outboundSocksHandshake(conn net.Conn) (string, error) {
 		// domain + 2 bytes (i.e. the next 2 bytes after the end of the domain)
 		targetAddress = fmt.Sprintf("%s:%d", buf[:domainLength], binary.BigEndian.Uint16(buf[domainLength:domainLength+2]))
 
+		// TODO: If this is a clearweb domain, handle routing here, then the exit will use net.Dial()
+
 	case 4: // ipv6 refuse
 		fmt.Println("IPv6 addresses not supported.")
 		return "", errors.New("ipv6 addresses not supported")
@@ -192,8 +194,18 @@ func outboundSocksHandshake(conn net.Conn) (string, error) {
 		return "", errors.New("invalid address type")
 	}
 
-	if targetAddress != "" {
+	// try connect, forget intercept for now
+	targetConn, err := net.Dial("tcp", targetAddress)
+	if err != nil {
+		log.Printf("Error dialing %s\n", targetAddress)
+		return "", err
+	}
+	defer targetConn.Close()
 
+	// successful connection send to client
+	conn.Write([]byte{0x05, 0x00, 0x00, 0x01, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00})
+
+	if targetAddress != "" {
 		return targetAddress, nil
 	}
 
