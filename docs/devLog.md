@@ -19,3 +19,7 @@ I'm not sure what DNS is doing though, it is set to route via the SOCKS5 proxy -
 ## 26/09/2023
 
 Spent quite some time today looking into the next part of the connection stream, which should be the HTTP data the proxy processes, after validating the SOCKS5 handshake. I currently expect to be able to read into a buffer the http connection data; however it appears to be empty (EOF). More granular debugging is required, there could be data there but I am accessing it wrong, or the browser closed the stream before the HTTP data could be processed (unlikely), or there is some issue with the connection state. Next steps will be to debug this. As far as I can see from SOCKS5 documentation, I do not need to send a response back to the client until the connection was successfully forwarded to the destination, so I don't think the HTTP data would follow if I send a response to the client - however I am remaining open minded to this.
+
+## 29/09/2023
+
+Todays effort was debugging the reason why I couldn't read in any further connection steam, it turns out that a response did need to be sent back to the client, and in return the HTTP data followed. So the program now catches the HTTP header, and presumably net.Dial() at this stage would forward the HTTP request on. This isn't what we want to do on the client.
