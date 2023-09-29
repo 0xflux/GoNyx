@@ -1,6 +1,10 @@
 package global
 
-import "net"
+import (
+	"fmt"
+	"log"
+	"net"
+)
 
 func ClassifyAddress(address string) string {
 	// Split address into host and port
@@ -23,4 +27,23 @@ func ClassifyAddress(address string) string {
 
 	// if not an IP, treat it as a domain
 	return "domain"
+}
+
+// resolve DNS of target
+// todo should add error handling in here when have time
+func GetDNS(targetAddress string) []string {
+	host, _, err := net.SplitHostPort(targetAddress)
+	if err != nil {
+		log.Println("Error splitting host and port, ", err)
+		return nil
+	}
+
+	lookup, err := net.LookupHost(host)
+	if err != nil {
+		log.Println("Error looking up host, ", err)
+		return nil
+	}
+
+	fmt.Println(lookup)
+	return lookup
 }

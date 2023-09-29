@@ -71,6 +71,7 @@ func processConnection(conn net.Conn) {
 
 // handle domain connection after SOCKS handshake
 func handleDomainConnection(targetAddress string, conn net.Conn) {
+
 	if strings.HasSuffix(strings.Split(targetAddress, ":")[0], ".nyx") {
 		fmt.Println("Nyx address")
 		// handle .nyx protocol
@@ -97,7 +98,7 @@ func handleDomainConnection(targetAddress string, conn net.Conn) {
 		fmt.Printf("Error reading http connection, %v.\nAborting request\n", err)
 	}
 
-	fmt.Printf("%s\n", buff[:req])
+	// fmt.Printf("%s\n", buff[:req])
 }
 
 // handle SOCKS5 handshake
