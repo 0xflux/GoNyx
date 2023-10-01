@@ -3,7 +3,6 @@ package clientcore
 import (
 	connectionHandlers "GoNyx/pkg/connection_handlers"
 	"GoNyx/pkg/global"
-	"bytes"
 	"encoding/binary"
 	"errors"
 	"fmt"
@@ -82,35 +81,22 @@ func handleDomainConnection(targetAddress string, conn net.Conn) {
 		fmt.Println("Nyx address")
 		// handle .nyx protocol
 	} else {
-		fmt.Println("Clearweb address")
 		// handle clear web connection routing
 		// exit will use net.Dial() not the client I think
 		httpData, err := connectionHandlers.ReadHTTPRequest(conn)
 		if err != nil {
-			log.Println(err)
+			// currently generating lots of errors, I think it's expected? Silencing for now...
+			// log.Println(err)
+			// possibly producing errors because its TLS. TODO
 			return
 		}
 
-		// just a test case which sends http data when visiting (HTTP not HTTPS) something.com
-		if bytes.Contains(httpData, []byte("something")) {
+		// test case for debugging, hxxp://something[.]com
+		if strings.Contains(httpData.Host, "something") {
 			go connectionHandlers.SendConnectionToRelay(httpData, global.ListenIP, global.RelayPort)
 		}
-
-		fmt.Printf("%s\n", httpData)
 	}
 
-	// parse http connection data
-	buff := make([]byte, 4096)
-	req, err := conn.Read(buff)
-	if err != nil {
-		if err == io.EOF {
-			// Currently reaching this error consistantly.
-			log.Printf("Error: EOF, buffer len: %d, data: %s.\n", req, buff[:req])
-		}
-		log.Printf("Error reading http connection, %v.\nAborting request\n", err)
-	}
-
-	// fmt.Printf("%s\n", buff[:req])
 }
 
 // handle SOCKS5 handshake
