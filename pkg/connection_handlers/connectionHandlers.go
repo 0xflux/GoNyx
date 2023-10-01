@@ -41,12 +41,12 @@ func SendConnectionToRelay(msg []byte, ip string, port int) {
 		log.Println(err)
 		return
 	}
-	defer func(conn net.Conn) {
-		err := conn.Close()
-		if err != nil {
+
+	defer func() {
+		if err := conn.Close(); err != nil {
 			log.Println(err)
 		}
-	}(conn)
+	}()
 
 	_, err = conn.Write(msg)
 	if err != nil {

@@ -21,7 +21,7 @@ Nyx Client core engine.
 func StartClient() {
 
 	/*
-		TODO: probably want a concurent func here handling routing before it even starts
+		TODO: probably want a concurrent func here handling routing before it even starts
 		listening, this will then maintain live circuits for the client to use.
 	*/
 
@@ -48,7 +48,11 @@ func processConnection(conn net.Conn) {
 	// ensures we close the connection in the right scope.
 	// therefore, cannot use the connection outside of this function; can use within
 	// nested functions however.
-	defer conn.Close()
+	defer func() {
+		if err := conn.Close(); err != nil {
+			log.Println(err)
+		}
+	}()
 
 	// complete SOCKS5 handshake
 	targetAddress, err := outboundSocksHandshake(conn)
@@ -144,7 +148,7 @@ func outboundSocksHandshake(conn net.Conn) (string, error) {
 	}
 
 	// the handshake requires a response at this stage,
-	// the second byte being the authenticaiton method by the proxy
+	// the second byte being the authentication method by the proxy
 	conn.Write([]byte{0x05, 0x00})
 
 	// Client sends the request packet (0x05, 0x01, 0x00, 0x03, <B_HOST>, <B_PORT>)
@@ -233,7 +237,10 @@ func outboundSocksHandshake(conn net.Conn) (string, error) {
 	}
 
 	// send success response to client
-	conn.Write([]byte{0x05, 0x00, 0x00, 0x01, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00})
+	_, err = conn.Write([]byte{0x05, 0x00, 0x00, 0x01, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00})
+	if err != nil {
+		return "", err
+	}
 
 	if targetAddress != "" {
 		return targetAddress, nil

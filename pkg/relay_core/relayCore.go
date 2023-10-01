@@ -19,12 +19,11 @@ func StartRelay() {
 	if err != nil {
 		log.Fatal(err)
 	}
-	defer func(listener net.Listener) {
-		err := listener.Close()
-		if err != nil {
+	defer func() {
+		if err := listener.Close(); err != nil {
 			log.Println(err)
 		}
-	}(listener)
+	}()
 
 	for {
 		conn, err := listener.Accept()
@@ -37,12 +36,11 @@ func StartRelay() {
 }
 
 func handleConnection(conn net.Conn) {
-	defer func(conn net.Conn) {
-		err := conn.Close()
-		if err != nil {
+	defer func() {
+		if err := conn.Close(); err != nil {
 			log.Println(err)
 		}
-	}(conn)
+	}()
 
 	buff := make([]byte, 1024)
 	n, err := conn.Read(buff)
