@@ -15,10 +15,43 @@ Nyx Relay core engine.
 // StartRelay entry point to starting the relay
 func StartRelay() {
 	// in local testing we have 3 predefined ports to use, so assign the relay a port number
-	_, err := getLocalBinding(global.RelayPort)
+	listener, err := getLocalBinding(global.RelayPort)
 	if err != nil {
 		log.Fatal(err)
 	}
+	defer func(listener net.Listener) {
+		err := listener.Close()
+		if err != nil {
+			log.Println(err)
+		}
+	}(listener)
+
+	for {
+		conn, err := listener.Accept()
+		if err != nil {
+			log.Println("Error accepting connection. ", err)
+			continue
+		}
+		go handleConnection(conn)
+	}
+}
+
+func handleConnection(conn net.Conn) {
+	defer func(conn net.Conn) {
+		err := conn.Close()
+		if err != nil {
+			log.Println(err)
+		}
+	}(conn)
+
+	buff := make([]byte, 1024)
+	n, err := conn.Read(buff)
+	if err != nil {
+		log.Println(err)
+		return
+	}
+
+	fmt.Println("Data received: ", string(buff[:n]))
 }
 
 // gets local bind address on localhost based off of 3 port numbers for debugging

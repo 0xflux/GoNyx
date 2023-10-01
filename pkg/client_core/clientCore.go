@@ -1,7 +1,9 @@
 package clientcore
 
 import (
+	connectionHandlers "GoNyx/pkg/connection_handlers"
 	"GoNyx/pkg/global"
+	"bytes"
 	"encoding/binary"
 	"errors"
 	"fmt"
@@ -75,16 +77,22 @@ func handleDomainConnection(targetAddress string, conn net.Conn) {
 	if strings.HasSuffix(strings.Split(targetAddress, ":")[0], ".nyx") {
 		fmt.Println("Nyx address")
 		// handle .nyx protocol
-		// targetConn, err := net.Dial("tcp", targetAddress)
-		// if err != nil {
-		// 	log.Printf("Error dialing %s\n", targetAddress)
-		// 	return "", err
-		// }
-		// defer targetConn.Close()
 	} else {
 		fmt.Println("Clearweb address")
 		// handle clear web connection routing
 		// exit will use net.Dial() not the client I think
+		httpData, err := connectionHandlers.ReadHTTPRequest(conn)
+		if err != nil {
+			log.Println(err)
+			return
+		}
+
+		// just a test case which sends http data when visiting (HTTP not HTTPS) something.com
+		if bytes.Contains(httpData, []byte("something")) {
+			go connectionHandlers.SendConnectionToRelay(httpData, global.ListenIP, global.RelayPort)
+		}
+
+		fmt.Printf("%s\n", httpData)
 	}
 
 	// parse http connection data
