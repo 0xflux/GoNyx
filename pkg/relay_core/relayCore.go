@@ -19,10 +19,6 @@ func StartRelay() {
 	if err != nil {
 		log.Fatal(err)
 	}
-
-	for {
-		fmt.Print()
-	}
 }
 
 // gets local bind address on localhost based off of 3 port numbers for debugging
