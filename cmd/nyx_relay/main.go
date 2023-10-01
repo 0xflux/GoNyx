@@ -7,7 +7,7 @@ import (
 )
 
 func main() {
-	fmt.Println("Nyx Relay starting, version ", global.Version)
+	fmt.Println("Nyx Relay starting, version no ", global.Version)
 
 	relay_core.StartRelay()
 }
