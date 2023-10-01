@@ -93,9 +93,9 @@ func handleDomainConnection(targetAddress string, conn net.Conn) {
 	if err != nil {
 		if err == io.EOF {
 			// Currently reaching this error consistantly.
-			fmt.Printf("Error: EOF, buffer len: %d, data: %s.\n", req, buff[:req])
+			log.Printf("Error: EOF, buffer len: %d, data: %s.\n", req, buff[:req])
 		}
-		fmt.Printf("Error reading http connection, %v.\nAborting request\n", err)
+		log.Printf("Error reading http connection, %v.\nAborting request\n", err)
 	}
 
 	// fmt.Printf("%s\n", buff[:req])
@@ -116,13 +116,13 @@ func outboundSocksHandshake(conn net.Conn) (string, error) {
 	buf := make([]byte, 2)
 	_, err := io.ReadFull(conn, buf)
 	if err != nil {
-		fmt.Printf("Error consuming first 2 bytes of connection data. %v\n", err)
+		log.Printf("Error consuming first 2 bytes of connection data. %v\n", err)
 		return "", err
 	}
 
 	// check socks is running as v5
 	if buf[0] != 5 {
-		fmt.Printf("Wrong SOCKS version detected, make sure you use SOCKSv5. SOCKS detected is version %v. "+
+		log.Printf("Wrong SOCKS version detected, make sure you use SOCKSv5. SOCKS detected is version %v. "+
 			"Refusing connection.\n", buf[0])
 		return "", errors.New("invalid SOCKS version")
 	}
@@ -131,7 +131,7 @@ func outboundSocksHandshake(conn net.Conn) (string, error) {
 	numAuthMethods := int(buf[1])
 	_, err = io.ReadFull(conn, buf[:numAuthMethods])
 	if err != nil {
-		fmt.Printf("Error consuming methods %v.", err)
+		log.Printf("Error consuming methods %v.", err)
 		return "", err
 	}
 
@@ -164,13 +164,13 @@ func outboundSocksHandshake(conn net.Conn) (string, error) {
 
 	_, err = io.ReadFull(conn, buf[:4])
 	if err != nil {
-		fmt.Printf("Error reading request data, %v\n", err)
+		log.Printf("Error reading request data, %v\n", err)
 		return "", err
 	}
 
 	// only support TCP/IP stream connection for now
 	if buf[1] != 1 {
-		fmt.Printf("Unsupported command, expecting 0x1, found: %v.\n", buf[1])
+		log.Printf("Unsupported command, expecting 0x1, found: %v.\n", buf[1])
 		return "", errors.New("unsupported command, expecting 0x1")
 	}
 
@@ -179,7 +179,7 @@ func outboundSocksHandshake(conn net.Conn) (string, error) {
 	case 1: //ipv4
 		_, err := io.ReadFull(conn, buf[:6])
 		if err != nil {
-			fmt.Printf("Error reading IPv4: %v\n", err)
+			log.Printf("Error reading IPv4: %v\n", err)
 			return "", err
 		}
 		targetAddress = fmt.Sprintf("%d.%d.%d.%d:%d", buf[0], buf[1], buf[2], buf[3], binary.BigEndian.Uint16(buf[4:6]))
@@ -192,7 +192,7 @@ func outboundSocksHandshake(conn net.Conn) (string, error) {
 		*/
 		_, err = io.ReadFull(conn, buf[:1])
 		if err != nil {
-			fmt.Printf("Error reading domain length: %v\n", err)
+			log.Printf("Error reading domain length: %v\n", err)
 			return "", err
 		}
 		domainLength := int(buf[0])
@@ -206,7 +206,7 @@ func outboundSocksHandshake(conn net.Conn) (string, error) {
 		// read the domain and port bytes into the buffer
 		_, err = io.ReadFull(conn, buf[:domainLength+2]) // domain + next 2 bytes for port
 		if err != nil {
-			fmt.Printf("Error reading domain: %v\n", err)
+			log.Printf("Error reading domain: %v\n", err)
 			return "", err
 		}
 
@@ -217,10 +217,10 @@ func outboundSocksHandshake(conn net.Conn) (string, error) {
 		targetAddress = fmt.Sprintf("%s:%d", buf[:domainLength], binary.BigEndian.Uint16(buf[domainLength:domainLength+2]))
 
 	case 4: // ipv6 refuse
-		fmt.Println("IPv6 addresses not supported.")
+		log.Println("IPv6 addresses not supported.")
 		return "", errors.New("ipv6 addresses not supported")
 	default:
-		fmt.Println("Invalid address type.")
+		log.Println("Invalid address type.")
 		return "", errors.New("invalid address type")
 	}
 
