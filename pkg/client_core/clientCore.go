@@ -15,7 +15,7 @@ import (
 Nyx Client core engine.
 */
 
-// start the engine on the client
+// StartClient start the engine on the client
 func StartClient() {
 
 	/*
