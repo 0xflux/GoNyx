@@ -29,13 +29,13 @@ func ReadHTTPRequest(conn net.Conn) (*http.Request, error) {
 func SendConnectionToRelay(msg *http.Request, ip string, port int) {
 	conn, err := net.Dial("tcp", fmt.Sprintf("%s:%d", ip, port))
 	if err != nil {
-		log.Println(err)
+		log.Println("Error connecting to relay, is it online? Err: ", err)
 		return
 	}
 
 	defer func() {
 		if err := conn.Close(); err != nil {
-			log.Println(err)
+			log.Println("Error cleaning up connection stream: ", err)
 		}
 	}()
 
@@ -48,7 +48,7 @@ func SendConnectionToRelay(msg *http.Request, ip string, port int) {
 	_, err = conn.Write(data)
 
 	if err != nil {
-		log.Println(err)
+		log.Println("Error writing data to connection stream ", err)
 		return
 	}
 
