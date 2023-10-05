@@ -1,16 +1,16 @@
-package clientcore
+package relay_core
 
-import (
-	"GoNyx/pkg/crypto"
-	"crypto/ecdsa"
-)
+/*
+An 'OOP' style approach to managing relays self contained settings.
+*/
 
+/*
 type Relay struct {
 	PrivateKey *ecdsa.PrivateKey
 	PublicKey  *ecdsa.PublicKey
 }
 
-func New() *Relay {
+func NewRelay() *Relay {
 	private, pub := crypto.NewKeyPair() // gen new key pair for comms encryption
 
 	return &Relay{
@@ -18,3 +18,4 @@ func New() *Relay {
 		PublicKey:  pub,
 	}
 }
+*/

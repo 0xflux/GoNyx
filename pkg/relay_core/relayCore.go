@@ -14,6 +14,11 @@ Nyx Relay core engine.
 
 // StartRelay entry point to starting the relay
 func StartRelay() {
+
+	// instantiate the relay
+	//this := NewRelay()
+	//fmt.Println("Public key for communications: ", this.PublicKey)
+
 	// in local testing we have 3 predefined ports to use, so assign the relay a port number
 	listener, err := getLocalBinding(global.RelayPort)
 	if err != nil {
@@ -42,7 +47,7 @@ func handleConnection(conn net.Conn) {
 		}
 	}()
 
-	buff := make([]byte, 1024)
+	buff := make([]byte, 1024) // what happens if this overflows? Err?
 	n, err := conn.Read(buff)
 	if err != nil {
 		log.Println(err)
