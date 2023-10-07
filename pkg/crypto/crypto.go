@@ -16,9 +16,7 @@ func NewDHKeyPair() (*ecdsa.PrivateKey, *ecdsa.PublicKey) {
 		log.Fatal("Fatal error generating private key. ", err)
 	}
 
-	pubKey := &privateKey.PublicKey
-
-	return privateKey, pubKey
+	return privateKey, &privateKey.PublicKey
 }
 
 // Sha256Fingerprint generates a hash of a public key. Do not use this for hashing private keys.

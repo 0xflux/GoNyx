@@ -17,7 +17,7 @@ func StartRelay() {
 
 	// instantiate the relay
 	this := NewRelay()
-	fmt.Println("Public key for communications: ", this.PublicKeyFingerprint)
+	fmt.Println("Server public fingerprint: ", this.PublicKeyHash)
 
 	// in local testing we have 3 predefined ports to use, so assign the relay a port number
 	listener, err := getLocalBinding(global.RelayPort)
