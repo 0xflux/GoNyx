@@ -29,6 +29,8 @@ func NewRelay() *Relay {
 	}
 
 	settingsData, err := os.ReadFile(filepath.Join(locations.Settings, global.RelaySettingsFileName))
+	var relay *Relay
+
 	if err != nil {
 		if os.IsNotExist(err) {
 			// relay not set up previously, so create as new relay
@@ -36,7 +38,7 @@ func NewRelay() *Relay {
 			private, pub := crypto.NewDHKeyPair() // gen new key pair for long term fingerprinting
 			pubHash := crypto.Sha256Fingerprint(pub)
 
-			relay := &Relay{
+			relay = &Relay{
 				PrivateKeyFingerprint: private,
 				PublicKeyFingerprint:  pub,
 				PublicKeyHash:         pubHash,
@@ -53,16 +55,16 @@ func NewRelay() *Relay {
 			}
 			// TODO check in the json file with the directory server
 			fmt.Println("New server settings created.")
-			return relay
 		} else {
 			log.Fatalf("Error reading file, %s", err)
 		}
 	} else {
 		fmt.Println("Server already registered, starting.")
-		relay := &Relay{}
+		relay = &Relay{}
 		if err = json.Unmarshal(settingsData, relay); err != nil {
 			log.Fatalf("Error reading settings, %s", err)
 		}
-		return relay
 	}
+
+	return relay
 }
