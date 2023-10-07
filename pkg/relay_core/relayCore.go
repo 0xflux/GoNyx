@@ -16,8 +16,8 @@ Nyx Relay core engine.
 func StartRelay() {
 
 	// instantiate the relay
-	//this := NewRelay()
-	//fmt.Println("Public key for communications: ", this.PublicKey)
+	this := NewRelay()
+	fmt.Println("Public key for communications: ", this.PublicKeyFingerprint)
 
 	// in local testing we have 3 predefined ports to use, so assign the relay a port number
 	listener, err := getLocalBinding(global.RelayPort)
