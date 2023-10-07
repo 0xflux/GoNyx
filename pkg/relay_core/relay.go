@@ -3,10 +3,10 @@ package relay_core
 import (
 	"GoNyx/pkg/crypto"
 	"GoNyx/pkg/global"
-	"crypto/ecdsa"
 	"encoding/json"
 	"fmt"
 	"log"
+	"math/big"
 	"os"
 	"path/filepath"
 )
@@ -16,9 +16,19 @@ An 'OOP' style approach to managing relays self-contained settings.
 */
 
 type Relay struct {
-	PrivateKeyFingerprint *ecdsa.PrivateKey `json:"privateKeyFingerprint"` // not sure if we need to save this private key
-	PublicKeyFingerprint  *ecdsa.PublicKey  `json:"publicKeyFingerprint"`
-	PublicKeyHash         string            `json:"PublicKeyHash"`
+	PrivateKey    JSONPrivKey `json:"privatekey"`
+	PublicKey     JSONPubKey  `json:"publickey"`
+	PublicKeyHash string      `json:"publickeyhash"`
+}
+
+type JSONPrivKey struct {
+	X *big.Int `json:"x"`
+	Y *big.Int `json:"y"`
+	D *big.Int `json:"d"`
+}
+type JSONPubKey struct {
+	X *big.Int `json:"x"`
+	Y *big.Int `json:"y"`
 }
 
 func NewRelay() *Relay {
@@ -39,9 +49,9 @@ func NewRelay() *Relay {
 			pubHash := crypto.Sha256Fingerprint(pub)
 
 			relay = &Relay{
-				PrivateKeyFingerprint: private,
-				PublicKeyFingerprint:  pub,
-				PublicKeyHash:         pubHash,
+				PrivateKey:    JSONPrivKey{X: private.X, Y: private.Y, D: private.D},
+				PublicKey:     JSONPubKey{X: pub.X, Y: pub.Y},
+				PublicKeyHash: pubHash,
 			}
 
 			jsonData, err := json.MarshalIndent(relay, "", "	")
