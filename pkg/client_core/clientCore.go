@@ -2,13 +2,19 @@ package clientcore
 
 import (
 	connectionHandlers "GoNyx/pkg/connection_handlers"
+	cryptolocal "GoNyx/pkg/crypto"
 	"GoNyx/pkg/global"
+	"GoNyx/pkg/relay_core"
+	"bytes"
+	"crypto/ecdh"
 	"encoding/binary"
+	"encoding/json"
 	"errors"
 	"fmt"
 	"io"
 	"log"
 	"net"
+	"net/http"
 	"strings"
 )
 
@@ -24,8 +30,15 @@ func StartClient() {
 		listening, this will then maintain live circuits for the client to use.
 	*/
 
+	go secretTest()
+
 	// start listener
-	listener, err := net.Listen("tcp", global.ClientListenAddr)
+	startListener(global.ClientListenAddr)
+}
+
+// startListener to be used as a goroutine to listen on a certain binding
+func startListener(addr string) {
+	listener, err := net.Listen("tcp", addr)
 	if err != nil {
 		log.Fatalf("Error starting listener, %v\n", err)
 	}
@@ -39,6 +52,54 @@ func StartClient() {
 
 		go processConnection(conn)
 	}
+}
+
+// secretTest tests the secret sharing algorithm
+func secretTest() {
+	privateKey, publicKey, err := cryptolocal.NewECDHKeyPair()
+	if err != nil {
+		log.Println("Error creating cryptographic keys for communication. ", err)
+	}
+
+	log.Println("Calculating secret client side.")
+
+	// proof of concept by using the current public key of the server
+	pubKey := []byte{4, 1, 24, 212, 73, 208, 70, 152, 8, 253, 146, 236, 224, 0, 179, 167, 247, 187, 33, 193, 207, 210,
+		161, 156, 221, 89, 147, 167, 112, 128, 28, 207, 41, 53, 74, 97, 68, 204, 154, 69, 209, 23, 40, 162, 40, 228, 49,
+		241, 90, 13, 53, 34, 210, 45, 222, 174, 208, 145, 233, 200, 51, 243, 113, 123, 136, 100, 238, 0, 46, 224, 213,
+		80, 84, 79, 107, 46, 232, 207, 88, 212, 230, 221, 107, 193, 195, 95, 140, 89, 65, 51, 228, 250, 217, 19, 89,
+		253, 21, 104, 88, 200, 98, 115, 172, 132, 4, 215, 229, 164, 207, 239, 92, 41, 101, 96, 164, 190, 81, 175, 238,
+		199, 145, 154, 123, 107, 220, 179, 230, 140, 140, 226, 73, 98, 184}
+
+	obj := relay_core.Relay{PublicKey: pubKey, PrivateKey: nil, PublicKeyHash: ""}
+
+	fmt.Println("As bytes: ", obj.PublicKey)
+
+	p, err := ecdh.P521().NewPublicKey(pubKey)
+	if err != nil {
+		log.Fatal("Error making public key - ", err)
+	}
+
+	if secret, err := privateKey.ECDH(p); err != nil {
+		log.Fatalf("Error finding secret, %v\n", err)
+	} else {
+		fmt.Println("Secret is: ", secret)
+	}
+
+	url := fmt.Sprintf("http://%s:%v", global.ListenIP, global.NegotiationPort)
+	msg := &relay_core.Relay{PrivateKey: privateKey.Bytes(), PublicKey: publicKey.Bytes()}
+	jsonData, err := json.Marshal(msg)
+	if err != nil {
+		log.Printf("Error marshal json, %s\n", err)
+	}
+	resp, err := http.Post(url, "application/json", bytes.NewBuffer(jsonData))
+	if err != nil {
+		log.Println("Error sending public key:", err)
+		return
+	}
+	defer resp.Body.Close()
+
+	log.Println("Public Key sent with status:", resp.Status)
 }
 
 // process connection to proxy

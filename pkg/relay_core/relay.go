@@ -54,7 +54,10 @@ func NewRelay() *Relay {
 		if os.IsNotExist(err) {
 			// relay not set up previously, so create as new relay
 			// generate keys
-			private, pub := cryptolocal.NewECDHKeyPair() // gen new key pair for long term fingerprinting
+			private, pub, err := cryptolocal.NewECDHKeyPair() // gen new key pair for long term fingerprinting
+			if err != nil {
+				log.Fatal("Error generating long term keys. Quitting. ", err)
+			}
 			pubHash := cryptolocal.Sha256Fingerprint(pub)
 
 			relay = &Relay{
@@ -84,6 +87,8 @@ func NewRelay() *Relay {
 			log.Fatalf("Error reading settings, %s", err)
 		}
 	}
+
+	fmt.Println("My public key is: ", relay.PublicKey)
 
 	return relay
 }

@@ -21,6 +21,7 @@ type ProgramLocations struct {
 const (
 	ClientPort            = 34888 // may want to change to var in future so people can change it on the fly?
 	RelayPort             = 34889 // may want to change to var in future so people can change it on the fly?
+	NegotiationPort       = 34800 // port for negotiating crypto
 	Version               = "0.0.1"
 	ListenIP              = "127.0.0.1" // IP to listen on locally
 	RelaySettingsFileName = "relay_settings.json"
@@ -28,7 +29,8 @@ const (
 
 // anything we cannot init as constant, or do not require as constants.
 var (
-	ClientListenAddr = fmt.Sprintf("localhost:%d", ClientPort)
+	ClientListenAddr       = fmt.Sprintf("localhost:%d", ClientPort)
+	RelayCryptoNegotiation = fmt.Sprintf("localhost:%d", NegotiationPort)
 )
 
 func GetFileLocations() (*ProgramLocations, error) {
