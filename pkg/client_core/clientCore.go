@@ -80,7 +80,7 @@ func secretTest() {
 		if cipher, err := cryptolocal.EncryptCommunication(secret, []byte("hello world")); err != nil {
 			fmt.Println("Error in encrypting comms and sending. ", err)
 		} else {
-			fmt.Println("Successfully encrypted message: %v", cipher)
+			fmt.Println("Successfully encrypted message: ", cipher)
 			// decrypt
 			if plain, err := cryptolocal.DecryptCommunication(cipher, secret); err != nil {
 				log.Fatal("Error decrypting, quitting.")
@@ -90,21 +90,6 @@ func secretTest() {
 		}
 
 	}
-
-	//url := fmt.Sprintf("http://%s:%v", global.ListenIP, global.NegotiationPort)
-	//msg := &relay_core.Relay{PrivateKey: privateKey.Bytes(), PublicKey: publicKey.Bytes()}
-	//jsonData, err := json.Marshal(msg)
-	//if err != nil {
-	//	log.Printf("Error marshal json, %s\n", err)
-	//}
-	//resp, err := http.Post(url, "application/json", bytes.NewBuffer(jsonData))
-	//if err != nil {
-	//	log.Println("Error sending public key:", err)
-	//	return
-	//}
-	//defer resp.Body.Close()
-
-	// log.Println("Public Key sent with status:", resp.Status)
 }
 
 // process connection to proxy
@@ -159,7 +144,7 @@ func handleDomainConnection(targetAddress string, conn net.Conn) {
 
 		// test case for debugging, hxxp://something[.]com
 		if strings.Contains(httpData.Host, "something") {
-			go connectionHandlers.SendConnectionToRelay(httpData, global.ListenIP, global.RelayPort)
+			go connectionHandlers.SendHTTPRequest(httpData, global.ListenIP, global.RelayPort)
 		}
 	}
 

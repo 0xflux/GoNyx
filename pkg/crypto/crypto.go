@@ -1,6 +1,7 @@
 package cryptolocal
 
 import (
+	connectionHandlers "GoNyx/pkg/connection_handlers"
 	"GoNyx/pkg/global"
 	"crypto/aes"
 	"crypto/cipher"
@@ -13,7 +14,6 @@ import (
 	"golang.org/x/crypto/hkdf"
 	"io"
 	"log"
-	"net"
 )
 
 // NewECDHKeyPair generate a key pair for use in Diffie-Hellman
@@ -72,22 +72,9 @@ func EncryptCommunication(secret []byte, data []byte) ([]byte, error) {
 	}
 
 	cipherText := aesgcm.Seal(nil, nonce, data, nil)
-
-	url := fmt.Sprintf("%s:%v", global.ListenIP, global.NegotiationPort)
-	conn, err := net.Dial("tcp", url)
-	if err != nil {
-		fmt.Println("Url is: ", url)
-		return nil, err
-	}
-	defer conn.Close()
-
 	payload := append(nonce, cipherText...)
 
-	// send over the connection
-	_, err = conn.Write(payload)
-	if err != nil {
-		return nil, err
-	}
+	connectionHandlers.SendEncryptedConnectionToRelay(payload, global.ListenIP, global.NegotiationPort)
 
 	return payload, nil
 }
