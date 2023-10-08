@@ -1,8 +1,9 @@
 package relay_core
 
 import (
-	"GoNyx/pkg/crypto"
+	cryptolocal "GoNyx/pkg/crypto"
 	"GoNyx/pkg/global"
+	"crypto/ecdsa"
 	"encoding/json"
 	"fmt"
 	"log"
@@ -16,9 +17,17 @@ An 'OOP' style approach to managing relays self-contained settings.
 */
 
 type Relay struct {
-	PrivateKey    JSONPrivKey `json:"privatekey"`
-	PublicKey     JSONPubKey  `json:"publickey"`
-	PublicKeyHash string      `json:"publickeyhash"`
+	PrivateKey    []byte `json:"privateKey"`
+	PublicKey     []byte `json:"publicKey"`
+	PublicKeyHash string `json:"publicKeyHash"`
+}
+
+type RelayOld struct {
+	PrivateKey        JSONPrivKey `json:"privatekey"`
+	PublicKey         JSONPubKey  `json:"publickey"`
+	PublicKeyHash     string      `json:"publickeyhash"`
+	DigitalPublicKey  *ecdsa.PublicKey
+	DigitalPrivateKey *ecdsa.PrivateKey
 }
 
 type JSONPrivKey struct {
@@ -45,12 +54,12 @@ func NewRelay() *Relay {
 		if os.IsNotExist(err) {
 			// relay not set up previously, so create as new relay
 			// generate keys
-			private, pub := crypto.NewDHKeyPair() // gen new key pair for long term fingerprinting
-			pubHash := crypto.Sha256Fingerprint(pub)
+			private, pub := cryptolocal.NewECDHKeyPair() // gen new key pair for long term fingerprinting
+			pubHash := cryptolocal.Sha256Fingerprint(pub)
 
 			relay = &Relay{
-				PrivateKey:    JSONPrivKey{X: private.X, Y: private.Y, D: private.D},
-				PublicKey:     JSONPubKey{X: pub.X, Y: pub.Y},
+				PrivateKey:    private.Bytes(), // encode to json as bytes
+				PublicKey:     pub.Bytes(),     // encode to json as bytes
 				PublicKeyHash: pubHash,
 			}
 
@@ -74,6 +83,7 @@ func NewRelay() *Relay {
 		if err = json.Unmarshal(settingsData, relay); err != nil {
 			log.Fatalf("Error reading settings, %s", err)
 		}
+		fmt.Printf("Relay private key: %v, \nPublic key: %v", relay.PrivateKey, relay.PublicKey)
 	}
 
 	return relay
