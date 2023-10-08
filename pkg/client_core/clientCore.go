@@ -80,6 +80,12 @@ func secretTest() {
 			fmt.Println("Error in encrypting comms and sending. ", err)
 		} else {
 			fmt.Println("Successfully encrypted message: %v", cipher)
+			// decrypt
+			if plain, err := cryptolocal.DecryptCommunication(cipher, secret); err != nil {
+				log.Fatal("Error decrypting, quitting.")
+			} else {
+				fmt.Println("Plaintext: ", plain)
+			}
 		}
 
 	}

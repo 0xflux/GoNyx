@@ -66,16 +66,12 @@ func EncryptCommunication(secret []byte, data []byte) ([]byte, error) {
 		return nil, err
 	}
 
-	fmt.Println("Nonce: ", nonce)
-
 	aesgcm, err := cipher.NewGCM(block)
 	if err != nil {
 		return nil, err
 	}
 
 	cipherText := aesgcm.Seal(nil, nonce, data, nil)
-
-	fmt.Println("Cipher: ", cipherText)
 
 	url := fmt.Sprintf("%s:%v", global.ListenIP, global.NegotiationPort)
 	conn, err := net.Dial("tcp", url)
@@ -106,4 +102,32 @@ func hashSecretForAESKey(secret []byte) ([]byte, error) {
 		return nil, err
 	}
 	return key, nil
+}
+
+func DecryptCommunication(cipherText []byte, secret []byte) ([]byte, error) {
+	key, err := hashSecretForAESKey(secret)
+	if err != nil {
+		log.Fatal("cannot hash secret")
+	}
+
+	block, err := aes.NewCipher(key)
+	if err != nil {
+		return nil, err
+	}
+
+	gcm, err := cipher.NewGCM(block)
+
+	// extract the nonce
+	nonce := cipherText[:gcm.NonceSize()]
+	data := cipherText[gcm.NonceSize():]
+
+	// decrypt
+	plainText, err := gcm.Open(nil, nonce, data, nil)
+	if err != nil {
+		log.Fatal("Error reading the ciphertext")
+	}
+
+	fmt.Println("Decrypted data is: ", plainText)
+
+	return plainText, nil
 }
