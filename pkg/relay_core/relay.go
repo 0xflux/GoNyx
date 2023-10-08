@@ -83,7 +83,6 @@ func NewRelay() *Relay {
 		if err = json.Unmarshal(settingsData, relay); err != nil {
 			log.Fatalf("Error reading settings, %s", err)
 		}
-		fmt.Printf("Relay private key: %v, \nPublic key: %v", relay.PrivateKey, relay.PublicKey)
 	}
 
 	return relay
