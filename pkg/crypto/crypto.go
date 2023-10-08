@@ -74,7 +74,7 @@ func EncryptCommunication(secret []byte, data []byte) ([]byte, error) {
 	cipherText := aesgcm.Seal(nil, nonce, data, nil)
 	payload := append(nonce, cipherText...)
 
-	connectionHandlers.SendEncryptedConnectionToRelay(payload, global.ListenIP, global.NegotiationPort)
+	connectionHandlers.SendEncryptedConnectionToRelay(payload, global.ListenIP, global.RelayPort) // todo move this
 
 	return payload, nil
 }

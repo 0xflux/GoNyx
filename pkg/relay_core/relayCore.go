@@ -57,46 +57,48 @@ func startListener(t string, this *Relay) {
 	switch t {
 	case "relay":
 		listener, _ = getLocalBinding(global.RelayPort)
+		defer func() {
+			if err := listener.Close(); err != nil {
+				log.Println(err)
+			}
+		}()
+		for {
+			conn, err := listener.Accept()
+			if err != nil {
+				log.Println("Error accepting connection. ", err)
+				continue
+			}
+			go handleConnection(conn, this)
+		}
 
 	case "negotiation":
 		listener, _ = net.Listen("tcp", global.RelayCryptoNegotiation)
+		defer func() {
+			if err := listener.Close(); err != nil {
+				log.Println(err)
+			}
+		}()
+		for {
+			conn, err := listener.Accept()
+			if err != nil {
+				log.Println("Error accepting connection. ", err)
+				continue
+			}
+			go handleNegotiation(conn, this)
+		}
 
 	default:
 		log.Fatal("Requires argument in function")
 	}
-
-	defer func() {
-		if err := listener.Close(); err != nil {
-			log.Println(err)
-		}
-	}()
-
-	for {
-		conn, err := listener.Accept()
-		if err != nil {
-			log.Println("Error accepting connection. ", err)
-			continue
-		}
-		go handleConnection(conn, this)
-	}
 }
 
-// handleConnection will handle inbound http requests
-func handleConnection(conn net.Conn, this *Relay) {
+// handleNegotiation will handle inbound ecdh key negotiations
+func handleNegotiation(conn net.Conn, this *Relay) {
 	defer func() {
 		if err := conn.Close(); err != nil {
 			log.Println(err)
 		}
 	}()
-
-	//buff := make([]byte, 1024) // what happens if this overflows? Err?
-	//n, err := conn.Read(buff)
-	//if err != nil {
-	//	log.Println(err)
-	//	return
-	//}
-	//
-	//fmt.Println("Data received: ", string(buff[:n]))
 
 	req, err := http.ReadRequest(bufio.NewReader(conn))
 	if err != nil {
@@ -119,7 +121,6 @@ func handleConnection(conn net.Conn, this *Relay) {
 		}
 	}(req.Body)
 
-	// Read the body (which should contain your JSON)
 	bodyBytes, err := io.ReadAll(req.Body)
 	if err != nil {
 		log.Println("Error reading request body:", err)
@@ -128,12 +129,10 @@ func handleConnection(conn net.Conn, this *Relay) {
 
 	var relay Relay
 	if err := json.Unmarshal(bodyBytes, &relay); err != nil {
-		// todo look at this, it is triggering on normal http traffic (because it expects key exchange)
 		log.Println("Error unmarshalling JSON:", err)
 		return
 	}
 
-	// Now you can access fields from relay, e.g., relay.PrivateKey
 	fmt.Println("Received Public Key:", relay.PublicKey)
 
 	fmt.Println("Calculating secret....")
@@ -152,6 +151,27 @@ func handleConnection(conn net.Conn, this *Relay) {
 		fmt.Println("Error after func: ", err)
 	}
 	fmt.Println("Shared secret generated, result: ", res)
+}
+
+// handleConnection will handle inbound TCP requests to the relay main listening port for data communication, not for
+// key exchanges.
+func handleConnection(conn net.Conn, this *Relay) {
+	defer func() {
+		if err := conn.Close(); err != nil {
+			log.Println(err)
+		}
+	}()
+
+	buff := make([]byte, 1024) // what happens if this overflows? Err?
+	n, err := conn.Read(buff)
+	if err != nil {
+		log.Println(err)
+		return
+	}
+
+	fmt.Println("Data received: ", string(buff[:n]))
+
+	// todo handle the encrypted blob here
 }
 
 // gets local bind address on localhost based off of 3 port numbers for debugging
