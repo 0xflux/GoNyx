@@ -8,6 +8,7 @@ import (
 	"crypto/rand"
 	"crypto/sha256"
 	"encoding/hex"
+	"errors"
 	"fmt"
 	"golang.org/x/crypto/hkdf"
 	"io"
@@ -31,7 +32,6 @@ func NewECDHKeyPair() (*ecdh.PrivateKey, *ecdh.PublicKey, error) {
 
 // Sha256Fingerprint generates a hash of a public key. Do not use this for hashing private keys.
 func Sha256Fingerprint(publicKey *ecdh.PublicKey) string {
-	// hash and return
 	hash := sha256.Sum256(publicKey.Bytes())
 	return hex.EncodeToString(hash[:])
 }
@@ -53,7 +53,7 @@ func EncryptCommunication(secret []byte, data []byte) ([]byte, error) {
 
 	key, err := hashSecretForAESKey(secret)
 	if err != nil {
-		log.Fatal("cannot hash secret")
+		return nil, errors.New("cannot hash secret in crypto.go")
 	}
 
 	block, err := aes.NewCipher(key)
@@ -77,7 +77,7 @@ func EncryptCommunication(secret []byte, data []byte) ([]byte, error) {
 	conn, err := net.Dial("tcp", url)
 	if err != nil {
 		fmt.Println("Url is: ", url)
-		log.Fatal(err)
+		return nil, err
 	}
 	defer conn.Close()
 
@@ -86,12 +86,13 @@ func EncryptCommunication(secret []byte, data []byte) ([]byte, error) {
 	// send over the connection
 	_, err = conn.Write(payload)
 	if err != nil {
-		log.Fatal(err)
+		return nil, err
 	}
 
-	return cipherText, nil
+	return payload, nil
 }
 
+// hashSecretForAESKey generates a key size for AES-256 from the ecdh secret
 func hashSecretForAESKey(secret []byte) ([]byte, error) {
 	// might want to salt this in the future depending on ttl?
 	salt := []byte(nil)
@@ -104,10 +105,11 @@ func hashSecretForAESKey(secret []byte) ([]byte, error) {
 	return key, nil
 }
 
+// DecryptCommunication decrypts a message encrypted with ecdh + aes-256
 func DecryptCommunication(cipherText []byte, secret []byte) ([]byte, error) {
 	key, err := hashSecretForAESKey(secret)
 	if err != nil {
-		log.Fatal("cannot hash secret")
+		return nil, errors.New("cannot hash secret")
 	}
 
 	block, err := aes.NewCipher(key)
@@ -124,10 +126,8 @@ func DecryptCommunication(cipherText []byte, secret []byte) ([]byte, error) {
 	// decrypt
 	plainText, err := gcm.Open(nil, nonce, data, nil)
 	if err != nil {
-		log.Fatal("Error reading the ciphertext")
+		return nil, err
 	}
-
-	fmt.Println("Decrypted data is: ", plainText)
 
 	return plainText, nil
 }

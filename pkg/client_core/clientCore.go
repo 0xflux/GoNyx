@@ -72,6 +72,7 @@ func secretTest() {
 		log.Fatal("Error making public key - ", err)
 	}
 
+	// TODO extrapolate the below POC into functional message encryption using relays & 'onioning'
 	if secret, err := privateKey.ECDH(p); err != nil {
 		log.Fatalf("Error finding secret, %v\n", err)
 	} else {
@@ -84,7 +85,7 @@ func secretTest() {
 			if plain, err := cryptolocal.DecryptCommunication(cipher, secret); err != nil {
 				log.Fatal("Error decrypting, quitting.")
 			} else {
-				fmt.Println("Plaintext: ", plain)
+				fmt.Println("Plaintext: ", string(plain))
 			}
 		}
 
