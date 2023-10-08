@@ -126,17 +126,18 @@ func handleConnection(conn net.Conn, this *Relay) {
 		return
 	}
 
-	var msg Relay
-	if err := json.Unmarshal(bodyBytes, &msg); err != nil {
+	var relay Relay
+	if err := json.Unmarshal(bodyBytes, &relay); err != nil {
+		// todo look at this, it is triggering on normal http traffic (because it expects key exchange)
 		log.Println("Error unmarshalling JSON:", err)
 		return
 	}
 
-	// Now you can access fields from msg, e.g., msg.PrivateKey
-	fmt.Println("Received Public Key:", msg.PublicKey)
+	// Now you can access fields from relay, e.g., relay.PrivateKey
+	fmt.Println("Received Public Key:", relay.PublicKey)
 
 	fmt.Println("Calculating secret....")
-	pub, err := ecdh.P521().NewPublicKey(msg.PublicKey)
+	pub, err := ecdh.P521().NewPublicKey(relay.PublicKey)
 	if err != nil {
 		log.Println("Error calculating public key")
 	}
