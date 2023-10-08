@@ -4,17 +4,13 @@ import (
 	connectionHandlers "GoNyx/pkg/connection_handlers"
 	cryptolocal "GoNyx/pkg/crypto"
 	"GoNyx/pkg/global"
-	"GoNyx/pkg/relay_core"
-	"bytes"
 	"crypto/ecdh"
 	"encoding/binary"
-	"encoding/json"
 	"errors"
 	"fmt"
 	"io"
 	"log"
 	"net"
-	"net/http"
 	"strings"
 )
 
@@ -56,7 +52,7 @@ func startListener(addr string) {
 
 // secretTest tests the secret sharing algorithm
 func secretTest() {
-	privateKey, publicKey, err := cryptolocal.NewECDHKeyPair()
+	privateKey, _, err := cryptolocal.NewECDHKeyPair()
 	if err != nil {
 		log.Println("Error creating cryptographic keys for communication. ", err)
 	}
@@ -71,10 +67,6 @@ func secretTest() {
 		253, 21, 104, 88, 200, 98, 115, 172, 132, 4, 215, 229, 164, 207, 239, 92, 41, 101, 96, 164, 190, 81, 175, 238,
 		199, 145, 154, 123, 107, 220, 179, 230, 140, 140, 226, 73, 98, 184}
 
-	obj := relay_core.Relay{PublicKey: pubKey, PrivateKey: nil, PublicKeyHash: ""}
-
-	fmt.Println("As bytes: ", obj.PublicKey)
-
 	p, err := ecdh.P521().NewPublicKey(pubKey)
 	if err != nil {
 		log.Fatal("Error making public key - ", err)
@@ -84,22 +76,28 @@ func secretTest() {
 		log.Fatalf("Error finding secret, %v\n", err)
 	} else {
 		fmt.Println("Secret is: ", secret)
+		if cipher, err := cryptolocal.EncryptCommunication(secret, []byte("hello world")); err != nil {
+			fmt.Println("Error in encrypting comms and sending. ", err)
+		} else {
+			fmt.Println("Successfully encrypted message: %v", cipher)
+		}
+
 	}
 
-	url := fmt.Sprintf("http://%s:%v", global.ListenIP, global.NegotiationPort)
-	msg := &relay_core.Relay{PrivateKey: privateKey.Bytes(), PublicKey: publicKey.Bytes()}
-	jsonData, err := json.Marshal(msg)
-	if err != nil {
-		log.Printf("Error marshal json, %s\n", err)
-	}
-	resp, err := http.Post(url, "application/json", bytes.NewBuffer(jsonData))
-	if err != nil {
-		log.Println("Error sending public key:", err)
-		return
-	}
-	defer resp.Body.Close()
+	//url := fmt.Sprintf("http://%s:%v", global.ListenIP, global.NegotiationPort)
+	//msg := &relay_core.Relay{PrivateKey: privateKey.Bytes(), PublicKey: publicKey.Bytes()}
+	//jsonData, err := json.Marshal(msg)
+	//if err != nil {
+	//	log.Printf("Error marshal json, %s\n", err)
+	//}
+	//resp, err := http.Post(url, "application/json", bytes.NewBuffer(jsonData))
+	//if err != nil {
+	//	log.Println("Error sending public key:", err)
+	//	return
+	//}
+	//defer resp.Body.Close()
 
-	log.Println("Public Key sent with status:", resp.Status)
+	// log.Println("Public Key sent with status:", resp.Status)
 }
 
 // process connection to proxy

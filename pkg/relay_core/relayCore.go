@@ -101,6 +101,9 @@ func handleConnection(conn net.Conn, this *Relay) {
 	req, err := http.ReadRequest(bufio.NewReader(conn))
 	if err != nil {
 		log.Println("Error reading HTTP request:", err)
+
+		// todo handle encrypted blob here
+
 		return
 	}
 
@@ -108,6 +111,7 @@ func handleConnection(conn net.Conn, this *Relay) {
 		log.Println("No body in request")
 		return
 	}
+
 	defer func(Body io.ReadCloser) {
 		err := Body.Close()
 		if err != nil {

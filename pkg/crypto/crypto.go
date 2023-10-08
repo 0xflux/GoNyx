@@ -1,12 +1,18 @@
 package cryptolocal
 
 import (
+	"GoNyx/pkg/global"
+	"crypto/aes"
+	"crypto/cipher"
 	"crypto/ecdh"
 	"crypto/rand"
 	"crypto/sha256"
 	"encoding/hex"
 	"fmt"
+	"golang.org/x/crypto/hkdf"
+	"io"
 	"log"
+	"net"
 )
 
 // NewECDHKeyPair generate a key pair for use in Diffie-Hellman
@@ -41,4 +47,63 @@ func ComputeSharedSecret(externPublicKey *ecdh.PublicKey, privateKey *ecdh.Priva
 	fmt.Println("Secret is: ", secret)
 
 	return secret, nil
+}
+
+func EncryptCommunication(secret []byte, data []byte) ([]byte, error) {
+
+	key, err := hashSecretForAESKey(secret)
+	if err != nil {
+		log.Fatal("cannot hash secret")
+	}
+
+	block, err := aes.NewCipher(key)
+	if err != nil {
+		return nil, err
+	}
+
+	nonce := make([]byte, 12)
+	if _, err = rand.Read(nonce); err != nil {
+		return nil, err
+	}
+
+	fmt.Println("Nonce: ", nonce)
+
+	aesgcm, err := cipher.NewGCM(block)
+	if err != nil {
+		return nil, err
+	}
+
+	cipherText := aesgcm.Seal(nil, nonce, data, nil)
+
+	fmt.Println("Cipher: ", cipherText)
+
+	url := fmt.Sprintf("%s:%v", global.ListenIP, global.NegotiationPort)
+	conn, err := net.Dial("tcp", url)
+	if err != nil {
+		fmt.Println("Url is: ", url)
+		log.Fatal(err)
+	}
+	defer conn.Close()
+
+	payload := append(nonce, cipherText...)
+
+	// send over the connection
+	_, err = conn.Write(payload)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	return cipherText, nil
+}
+
+func hashSecretForAESKey(secret []byte) ([]byte, error) {
+	// might want to salt this in the future depending on ttl?
+	salt := []byte(nil)
+	hkdfReader := hkdf.New(sha256.New, secret, salt, nil)
+
+	key := make([]byte, 32) // 32 bytes for AES-256
+	if _, err := io.ReadFull(hkdfReader, key); err != nil {
+		return nil, err
+	}
+	return key, nil
 }
